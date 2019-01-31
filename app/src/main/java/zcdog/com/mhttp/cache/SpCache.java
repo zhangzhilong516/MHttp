@@ -30,6 +30,11 @@ public class SpCache implements Cache {
     }
 
     @Override
+    public <T> T getObj(String key, Class<T> clazz) {
+        return null;
+    }
+
+    @Override
     public boolean hasCache(String key) {
         return false;
     }

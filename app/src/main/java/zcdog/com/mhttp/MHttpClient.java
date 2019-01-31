@@ -5,9 +5,11 @@ import android.os.Handler;
 import android.os.Looper;
 
 import zcdog.com.mhttp.callback.JsonConvert;
-import zcdog.com.mhttp.request.Engine;
+import zcdog.com.mhttp.engine.Engine;
+import zcdog.com.mhttp.engine.OkhttpEngine;
+import zcdog.com.mhttp.request.DownloadRequest;
 import zcdog.com.mhttp.request.GetRequest;
-import zcdog.com.mhttp.request.OkhttpEngine;
+import zcdog.com.mhttp.request.Method;
 import zcdog.com.mhttp.request.PostRequest;
 import zcdog.com.mhttp.utils.LogUtils;
 
@@ -21,6 +23,9 @@ public final class MHttpClient {
     private static final MHttpClient httpUtils = new MHttpClient();
 
     public Context getContext() {
+        if(context == null){
+            throw new IllegalArgumentException("there is no context !!!");
+        }
         return context;
     }
 
@@ -29,6 +34,7 @@ public final class MHttpClient {
     private HttpConfig config;
     private Engine httpEngine;
     private JsonConvert jsonConvert;
+
     private MHttpClient(){
         this.handler = new Handler(Looper.getMainLooper());
         httpEngine = new OkhttpEngine();
@@ -72,11 +78,13 @@ public final class MHttpClient {
         handler.post(r);
     }
 
-    public static GetRequest get(){
-        return new GetRequest();
+    public static GetRequest.Builder get(){
+        return new GetRequest.Builder(Method.GET);
     }
-    public static PostRequest post(){
-        return new PostRequest();
+    public static PostRequest.Builder post(){
+        return new PostRequest.Builder(Method.POST);
     }
-
+    public static DownloadRequest.Builder download(){
+        return new DownloadRequest.Builder(Method.DOWNLOAD);
+    }
 }

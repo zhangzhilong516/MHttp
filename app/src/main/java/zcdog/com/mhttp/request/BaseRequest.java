@@ -1,6 +1,5 @@
 package zcdog.com.mhttp.request;
 
-import android.util.Base64;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -17,37 +16,37 @@ import zcdog.com.mhttp.callback.ServerException;
  * @date: 2019/1/28
  * @des:
  */
-public abstract class BaseRequest {
-    protected HashMap<String, String> mHeaders;
-    protected HashMap<String, Object> mParams;
-    protected String url;
-    protected final Method method;
+public abstract class BaseRequest implements Request{
+    final String url;
+    final Method method;
+    CacheMode cacheMode;
+    HashMap<String, String> mHeaders;
+    HashMap<String, Object> mParams;
 
-    protected CacheMode cacheMode = CacheMode.DEFAULT;
-
-    public BaseRequest(Method method) {
-        this.method = method;
+    public BaseRequest(Builder builder) {
+        this.method = builder.method;
+        this.url = builder.url;
+        if(builder.cacheMode == null){
+            this.cacheMode = CacheMode.DEFAULT;
+        }else{
+            this.cacheMode = builder.cacheMode;
+        }
+        if(builder.mParams != null){
+            this.mParams = builder.mParams;
+        }
+        if(builder.mHeaders != null){
+            this.mHeaders = builder.mHeaders;
+        }
     }
-
-    protected Method method() {
+    public Method method() {
         return method;
     }
-    public BaseRequest url(String url) {
-        this.url = url;
-        return this;
+    public HashMap<String, String> headers() {
+        return mHeaders;
     }
 
-    public BaseRequest cacheMode(CacheMode cacheMode) {
-        this.cacheMode = cacheMode;
-        return this;
-    }
-
-    public BaseRequest addParam(String key, Object value) {
-        if (mParams == null) {
-            mParams = new HashMap<>();
-        }
-        mParams.put(key, value);
-        return this;
+    public HashMap<String, Object> params() {
+        return mParams;
     }
 
     public BaseRequest addParams(HashMap<String, Object> params) {
@@ -57,14 +56,6 @@ public abstract class BaseRequest {
             }
             mParams.putAll(params);
         }
-        return this;
-    }
-
-    public BaseRequest addHeader(String key, String value) {
-        if (mHeaders == null) {
-            mHeaders = new HashMap<>();
-        }
-        mHeaders.put(key, value);
         return this;
     }
 
@@ -78,25 +69,11 @@ public abstract class BaseRequest {
         return this;
     }
 
-    protected HashMap<String, String> headers() {
-        if (mHeaders != null) {
-            return mHeaders;
-        }
-        return null;
-    }
-
-    protected HashMap<String, Object> params() {
-        if (mParams != null) {
-            return mParams;
-        }
-        return null;
-    }
-
-    protected String url() {
+    public String url() {
         return url;
     }
 
-    protected String toCacheKey() {
+    public String toCacheKey() {
         String cacheKey = url;
         try {
             if(params() != null){
@@ -117,36 +94,8 @@ public abstract class BaseRequest {
         }
         return cacheKey;
     }
-    protected CacheMode cacheMode() {
+    public CacheMode cacheMode() {
         return cacheMode;
-    }
-
-    /**
-     * 是否需要缓存
-     */
-    protected boolean isCache() {
-        if(!checkCacheMethod(method)){
-            return false;
-        }
-        boolean isCache = false;
-        switch (cacheMode){
-            case NO_CACHE:
-                isCache = false;
-                break;
-            case DEFAULT:
-            case ONLY_CACHE:
-            case FORCE_NET_WORK:
-                isCache = true;
-                break;
-        }
-        return isCache;
-    }
-
-    private boolean checkCacheMethod(Method method){
-        if(method == Method.GET || (method == Method.POST && mParams != null)){
-            return true;
-        }
-        return false;
     }
 
     @Override
@@ -165,6 +114,47 @@ public abstract class BaseRequest {
         return stringBuilder.toString();
     }
 
-    public abstract void callBack(ICallback callback);
-    public abstract void execute() throws ServerException;
+    /**
+     * 是否需要缓存
+     */
+    public boolean isNeedCache() {
+        if(method == Method.GET || (method == Method.POST && mParams != null)){
+            return true;
+        }
+        boolean isCache = false;
+        switch (cacheMode){
+            case NO_CACHE:
+                isCache = false;
+                break;
+            case DEFAULT:
+            case ONLY_CACHE:
+            case FORCE_NET_WORK:
+                isCache = true;
+                break;
+        }
+        return isCache;
+    }
+
+    public abstract static class Builder implements Request.Builder{
+        CacheMode cacheMode;
+        HashMap<String, String> mHeaders;
+        HashMap<String, Object> mParams;
+        String url;
+        Method method;
+        public Builder(Method method){
+            this.method = method;
+        }
+
+        abstract <T extends BaseRequest> T build();
+
+        @Override
+        public <T> T execute() throws ServerException{
+            return build().execute();
+        }
+        @Override
+        public void callBack(ICallback callback){
+            build().callBack(callback);
+        }
+
+    }
 }

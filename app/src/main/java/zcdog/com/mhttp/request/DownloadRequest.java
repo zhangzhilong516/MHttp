@@ -1,5 +1,8 @@
 package zcdog.com.mhttp.request;
 
+import android.text.TextUtils;
+
+import java.io.File;
 import java.util.HashMap;
 
 import zcdog.com.mhttp.MHttpClient;
@@ -9,36 +12,63 @@ import zcdog.com.mhttp.callback.ServerException;
 
 /**
  * @author: zhangzhilong
- * @date: 2019/1/28
+ * @date: 2019/1/31
  * @des:
  */
-public class GetRequest extends BaseRequest {
-    public GetRequest(Builder builder) {
+public class DownloadRequest extends BaseRequest {
+    private static final String DES_PATH = "des_path";
+    private static final String FILE_NAME = "file_name";
+
+    public DownloadRequest(Builder builder) {
         super(builder);
     }
+
     @Override
-    public String url() {
-        return toCacheKey();
+    public File execute() throws ServerException {
+        return MHttpClient.getInstance().engine().download(this);
+    }
+
+    public String getDesPath() {
+        if (mParams == null) {
+            throw new IllegalStateException("there is no desPath");
+        }
+        String desPath = (String) mParams.get(DES_PATH);
+        if (TextUtils.isEmpty(desPath)) {
+            throw new IllegalStateException("there is no desPath");
+        }
+        return desPath;
+    }
+
+    public String getFileName() {
+        if (mParams != null) {
+            String fileName = (String) mParams.get(FILE_NAME);
+            if (!TextUtils.isEmpty(fileName)) {
+                return fileName;
+            }
+        }
+        return url.substring(url.lastIndexOf("/") + 1);
     }
 
     @Override
     public void callBack(ICallback callback) {
-        MHttpClient.getInstance().engine().enqueue(this,callback);
+        MHttpClient.getInstance().engine().enqueue(this, callback);
     }
 
-    @Override
-    public String execute() throws ServerException {
-        return MHttpClient.getInstance().engine().execute(this);
-    }
 
-    public static class Builder extends BaseRequest.Builder{
+    public static class Builder extends BaseRequest.Builder {
 
         public Builder(Method method) {
             super(method);
+            this.cacheMode = CacheMode.NO_CACHE;
         }
 
-        public Builder cacheMode(CacheMode cacheMode) {
-            this.cacheMode = cacheMode;
+        public Builder desPath(String desPath) {
+            addParam(DES_PATH, desPath);
+            return this;
+        }
+
+        public Builder fileName(String fileName) {
+            addParam(FILE_NAME, fileName);
             return this;
         }
 
@@ -86,8 +116,7 @@ public class GetRequest extends BaseRequest {
 
         @Override
         protected BaseRequest build() {
-            return new GetRequest(this);
+            return new DownloadRequest(this);
         }
-
     }
 }

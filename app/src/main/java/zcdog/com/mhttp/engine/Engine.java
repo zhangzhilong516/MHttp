@@ -1,8 +1,17 @@
-package zcdog.com.mhttp.request;
+package zcdog.com.mhttp.engine;
+
+import java.io.File;
+import java.io.InputStream;
 
 import zcdog.com.mhttp.HttpConfig;
+import zcdog.com.mhttp.callback.FileCallback;
 import zcdog.com.mhttp.callback.ICallback;
 import zcdog.com.mhttp.callback.ServerException;
+import zcdog.com.mhttp.request.BaseRequest;
+import zcdog.com.mhttp.request.DownloadRequest;
+import zcdog.com.mhttp.request.GetRequest;
+import zcdog.com.mhttp.request.PostRequest;
+import zcdog.com.mhttp.request.UploadRequest;
 
 /**
  * @author: zhangzhilong
@@ -21,11 +30,18 @@ public interface Engine {
     };
 
     void initConfig(HttpConfig httpConfig);
+
     void get(GetRequest request, ICallback callback);
     void post(PostRequest request, ICallback callback);
+    void download(DownloadRequest request, FileCallback callback);
+    void upload(UploadRequest request, FileCallback callback);
 
     String get(GetRequest request) throws ServerException;
     String post(PostRequest request) throws ServerException;
+    File downloadFile(DownloadRequest request) throws ServerException;
+    InputStream download(DownloadRequest request) throws ServerException;
+
+    String upload(UploadRequest request) throws ServerException;
 
     void enqueue(BaseRequest request, ICallback callBack);
     String execute(BaseRequest request) throws ServerException;

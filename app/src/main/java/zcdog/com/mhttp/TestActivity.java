@@ -1,15 +1,18 @@
 package zcdog.com.mhttp;
 
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 
+import java.io.File;
+
 import zcdog.com.mhttp.cache.CacheMode;
+import zcdog.com.mhttp.callback.FileCallback;
 import zcdog.com.mhttp.callback.HttpCallback;
-import zcdog.com.mhttp.callback.ICallback;
 import zcdog.com.mhttp.callback.ServerException;
-import zcdog.com.mhttp.request.HttpEngine;
+import zcdog.com.mhttp.engine.HttpEngine;
+import zcdog.com.mhttp.utils.LogUtils;
 
 public class TestActivity extends AppCompatActivity {
     private TextView textView;
@@ -46,7 +49,7 @@ public class TestActivity extends AppCompatActivity {
 //                .addHeader("AppId", "zcdog")
 //                .addHeader("VersionName", "5.7")
 //                .addHeader("ChannelId", "normal")
-//                .addParam("parentTabId", "-1")
+//                .addParam("parentTabId", "14")
 //                .url("https://apis.zcdog.com:50183/api/user/userMgr/user/getHomePageContentV3")
 //                .callBack(new HttpCallback<String>() {
 //                    @Override
@@ -64,30 +67,91 @@ public class TestActivity extends AppCompatActivity {
 //                        e.printStackTrace();
 //                    }
 //                });
-        MHttpClient.post()
-                .url("http://l-zcgtest10.dev.cn2.corp.agrant.cn:9201/api/mall/getCommodityDetail")
-                .addParam("commodityId","ZMCOMD958170821110656555")
-                .addHeader("Accept-Version", "com.zcdog.mall+json;1.0")
-                .addHeader("VersionCode", "7021")
-                .addHeader("AppId", "zcdog")
-                .addHeader("VersionName", "5.7")
-                .addHeader("ChannelId", "normal")
-                .cacheMode(CacheMode.NO_CACHE)
-                .callBack(new HttpCallback<String>() {
+
+//        new Thread() {
+//            @Override
+//            public void run() {
+//                try {
+//                    final String response = MHttpClient.get()
+//                            .addHeader("Accept-Version", "com.zcdog.customer+json;1.0")
+//                            .addHeader("VersionCode", "7021")
+//                            .addHeader("AppId", "zcdog")
+//                            .addHeader("VersionName", "5.7")
+//                            .addHeader("ChannelId", "normal")
+//                            .addParam("parentTabId", "14")
+//                            .url("https://apis.zcdog.com:50183/api/user/userMgr/user/getHomePageContentV3").execute();
+//                    runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            textView.setText(response);
+//                        }
+//                    });
+//                } catch (ServerException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }.start();
+//        new Thread() {
+//            @Override
+//            public void run() {
+//                try {
+//                    final String response = MHttpClient.post()
+//                            .url("http://l-zcgtest10.dev.cn2.corp.agrant.cn:9201/api/mall/getCommodityDetail")
+//                            .addParam("commodityId", "ZMCOMD958170821110656555")
+//                            .addHeader("Accept-Version", "com.zcdog.mall+json;1.0")
+//                            .addHeader("VersionCode", "7021")
+//                            .addHeader("AppId", "zcdog")
+//                            .addHeader("VersionName", "5.7")
+//                            .addHeader("ChannelId", "normal")
+//                            .execute();
+//                    runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            textView.setText(response);
+//                        }
+//                    });
+//                } catch (ServerException e) {
+//                    e.printStackTrace();
+//                }
+//                        .callBack(new HttpCallback<String>() {
+//                            @Override
+//                            public void onError(ServerException e) {
+//                                e.printStackTrace();
+//                            }
+//
+//                            @Override
+//                            public void onSuccess(final String s) {
+//                                runOnUiThread(new Runnable() {
+//                                    @Override
+//                                    public void run() {
+//                                        textView.setText(s);
+//                                    }
+//                                });
+//                            }
+//                        });
+//            }
+//        }.start();
+        File file = new File(Environment.getExternalStorageDirectory() + File.separator + "DiskCache");
+        MHttpClient.download()
+                .desPath(file.getAbsolutePath())
+                .url("http://static.zcdog.com/zcdog/apk/mall/6.0/1/Mall6.0_zcdog_web.apk")
+                .callBack(new FileCallback() {
+                    @Override
+                    public void onProgress(int total, int curr) {
+                        LogUtils.print("total======" + total + "curr ================" + curr );
+                    }
+
+                    @Override
+                    public void onSuccess(File file) {
+                        LogUtils.print("======================下载成功！=================" + file.getAbsolutePath());
+                    }
+
                     @Override
                     public void onError(ServerException e) {
                         e.printStackTrace();
                     }
-
-                    @Override
-                    public void onSuccess(final String s) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                textView.setText(s);
-                            }
-                        });
-                    }
                 });
+
+
     }
 }

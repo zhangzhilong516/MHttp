@@ -1,15 +1,19 @@
-package zcdog.com.mhttp.request;
+package zcdog.com.mhttp.engine;
 
 import android.text.TextUtils;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import zcdog.com.mhttp.HttpConfig;
 import zcdog.com.mhttp.MHttpClient;
+import zcdog.com.mhttp.callback.FileCallback;
 import zcdog.com.mhttp.callback.ServerException;
 import zcdog.com.mhttp.callback.ICallback;
+import zcdog.com.mhttp.request.BaseRequest;
+import zcdog.com.mhttp.request.DownloadRequest;
+import zcdog.com.mhttp.request.GetRequest;
+import zcdog.com.mhttp.request.PostRequest;
+import zcdog.com.mhttp.utils.HttpUtils;
 import zcdog.com.mhttp.utils.LogUtils;
 
 /**
@@ -40,22 +44,30 @@ public abstract class BaseEngine implements Engine {
      * 執行http請求
      */
     public String execute(BaseRequest request,ICallback callBack) throws ServerException{
+
+        if(!HttpUtils.isNetworkConnected() && hasCache(request)){ // 无网络，读缓存
+            return getCache(request,callBack);
+        }
         request.addHeaders(httpConfig.getCommonHeaders());
         LogUtils.print(request.toString());
+        String response = null;
         switch (request.cacheMode()) {
             case ONLY_CACHE:
-                getCache(request, callBack);
-            case FORCE_NET_WORK:
+                response = getCache(request, callBack);
+                break;
             case NO_CACHE:
+                response = executeMethod(request, callBack);
+                break;
+            case FORCE_NET_WORK:
             case DEFAULT:
                 if (hasCache(request)) {
-                    getCache(request, callBack);
+                    response = getCache(request, callBack);
                     break;
                 }
-                executeMethod(request, callBack);
+                response = executeMethod(request, callBack);
                 break;
         }
-        return null;
+        return response;
     }
 
     private String executeMethod(final BaseRequest request,ICallback callBack) throws ServerException{
@@ -72,6 +84,12 @@ public abstract class BaseEngine implements Engine {
                     return post((PostRequest) request);
                 }else{
                     post((PostRequest) request,callBack);
+                }
+                break;
+            case DOWNLOAD:
+                if(callBack == NULL_CALLBACK){
+                }else{
+                    download((DownloadRequest) request, (FileCallback) callBack);
                 }
                 break;
         }
@@ -93,15 +111,17 @@ public abstract class BaseEngine implements Engine {
             throw new NullPointerException("Cache == null");
         }
         if(callBack == NULL_CALLBACK){
-            return httpConfig.cache().get(request.toCacheKey());
+            String cacheResponse = httpConfig.cache().get(request.toCacheKey());
+            LogUtils.print("RequestUrl ==" + request.toCacheKey() + "\n" + "CacheResponse==" + cacheResponse);
+            return cacheResponse;
         }else{
             executorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    String cacheResult = httpConfig.cache().get(request.toCacheKey());
-                    if (!TextUtils.isEmpty(cacheResult)) {
-                        callBack.onSuccess(cacheResult);
-                        LogUtils.print("RequestUrl ==" + request.toCacheKey() + "\n" + "CacheResponse==" + cacheResult);
+                    String cacheResponse = httpConfig.cache().get(request.toCacheKey());
+                    if (!TextUtils.isEmpty(cacheResponse)) {
+                        callBack.onSuccess(cacheResponse);
+                        LogUtils.print("RequestUrl ==" + request.toCacheKey() + "\n" + "CacheResponse==" + cacheResponse);
                     }
                 }
             });
@@ -111,7 +131,7 @@ public abstract class BaseEngine implements Engine {
 
     protected void setCache(final BaseRequest request, String response) {
         LogUtils.print("RequestUrl ==" + request.toCacheKey() + "\n" + "NetworkResponse==" + response);
-        if (httpConfig.cache() != null && request.isCache()) {
+        if (httpConfig.cache() != null && request.isNeedCache()) {
             httpConfig.cache().put(request.toCacheKey(), response);
         }
     }

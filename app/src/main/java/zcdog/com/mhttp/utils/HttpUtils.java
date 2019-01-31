@@ -1,5 +1,10 @@
 package zcdog.com.mhttp.utils;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,6 +25,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import okhttp3.internal.Util;
+import zcdog.com.mhttp.MHttpClient;
 
 /**
  * @author: zhangzhilong
@@ -72,5 +78,16 @@ public class HttpUtils {
     }
     public static String inputStreamToString(InputStream in) throws IOException {
         return readFully(new InputStreamReader(in, Util.UTF_8));
+    }
+
+    @SuppressLint("MissingPermission")
+    public static boolean isNetworkConnected() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) MHttpClient.getInstance().getContext()
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo mNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        if (mNetworkInfo != null) {
+            return mNetworkInfo.isAvailable();
+        }
+        return false;
     }
 }
