@@ -121,7 +121,13 @@ public abstract class BaseRequest {
         return cacheMode;
     }
 
+    /**
+     * 是否需要缓存
+     */
     protected boolean isCache() {
+        if(!checkCacheMethod(method)){
+            return false;
+        }
         boolean isCache = false;
         switch (cacheMode){
             case NO_CACHE:
@@ -134,6 +140,13 @@ public abstract class BaseRequest {
                 break;
         }
         return isCache;
+    }
+
+    private boolean checkCacheMethod(Method method){
+        if(method == Method.GET || (method == Method.POST && mParams != null)){
+            return true;
+        }
+        return false;
     }
 
     @Override
