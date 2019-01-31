@@ -1,6 +1,7 @@
 package zcdog.com.mhttp.cache.diskcache;
 
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -9,6 +10,7 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import zcdog.com.mhttp.MHttpClient;
 import zcdog.com.mhttp.cache.Cache;
 
 
@@ -41,9 +43,9 @@ public class DiskCache implements Cache{
         }
     }
 
-    public String get(String key) {
+    public String get(String url) {
         try {
-            String cacheKey = md5(key);
+            String cacheKey = md5Url(url);
             DiskLruCache.Snapshot snapshot = cache.get(cacheKey);
             if (snapshot != null) {
                 InputStream inputStream = snapshot.getInputStream(0);
@@ -62,8 +64,17 @@ public class DiskCache implements Cache{
     }
 
     @Override
-    public boolean hasCache(String key) {
-        String cacheKey = md5(key);
+    public <T> T getObj(String key, Class<T> clazz) {
+        String cacheData = get(key);
+        if(!TextUtils.isEmpty(cacheData)){
+            return MHttpClient.getInstance().getJsonConvert().convert(cacheData,clazz);
+        }
+        return null;
+    }
+
+    @Override
+    public boolean hasCache(String url) {
+        String cacheKey = md5Url(url);
         DiskLruCache.Snapshot snapshot = null;
         try {
             snapshot = cache.get(cacheKey);
@@ -82,10 +93,10 @@ public class DiskCache implements Cache{
     /**
      * put数据流
      */
-    public void put(String key, InputStream is) {
+    public void put(String url, InputStream is) {
         DiskLruCache.Editor edit = null;
         try {
-            edit = cache.edit(md5(key));
+            edit = cache.edit(md5Url(url));
             BufferedOutputStream outputStream = new BufferedOutputStream(edit.newOutputStream(0));
             outputStream.write(long2Bytes(System.currentTimeMillis()));
             byte[] buf = new byte[BUFFER_SIZE];
@@ -111,10 +122,10 @@ public class DiskCache implements Cache{
     /**
      * put字节数据
      */
-    public void put(String key, byte[] value) {
+    public void put(String url, byte[] value) {
         DiskLruCache.Editor edit = null;
         try {
-            edit = cache.edit(md5(key));
+            edit = cache.edit(md5Url(url));
             BufferedOutputStream outputStream = new BufferedOutputStream(edit.newOutputStream(0));
             outputStream.write(long2Bytes(System.currentTimeMillis()));
             outputStream.write(value);
@@ -129,11 +140,10 @@ public class DiskCache implements Cache{
 
     /**
      * 删除缓存
-     * @param key
      */
-    public void remove(String key){
+    public void remove(String url){
         try {
-            cache.remove(md5(key));
+            cache.remove(md5Url(url));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -149,25 +159,24 @@ public class DiskCache implements Cache{
         }
     }
 
-    public static String md5(String key) {
-        MessageDigest md5 = null;
+    public static String md5Url(String url) {
+        StringBuffer sb = new StringBuffer();
         try {
-            md5 = MessageDigest.getInstance("MD5");
-            byte[] bytes = md5.digest(key.getBytes());
-            String result = "";
-            for (byte b : bytes) {
-                String temp = Integer.toHexString(b & 0xff);
-                if (temp.length() == 1) {
-                    temp = "0" + temp;
-                }
-                result += temp;
+            MessageDigest messageDigest = MessageDigest.getInstance("md5");
+            messageDigest.update(url.getBytes());
+            byte[] cipher = messageDigest.digest();
+            for (byte b : cipher) {
+                // 转成了 16 机制
+                String hexStr = Integer.toHexString(b & 0xff);
+                // 不足还补 0
+                sb.append(hexStr.length() == 1 ? "0" + hexStr : hexStr);
             }
-            return result;
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
-        return "";
+        return sb.toString();
     }
+
 
     public static boolean isBeOverDue(InputStream inputStream) {
         byte[] time = new byte[8];
