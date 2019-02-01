@@ -1,9 +1,14 @@
 package zcdog.com.mhttp.utils;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.content.PermissionChecker;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,5 +94,15 @@ public class HttpUtils {
             return mNetworkInfo.isAvailable();
         }
         return false;
+    }
+
+
+    public static boolean hasPermissions() {
+        if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT){
+            return true;
+        }
+        Context context = MHttpClient.getInstance().getContext();
+        return PackageManager.PERMISSION_GRANTED == PermissionChecker.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
+                && PackageManager.PERMISSION_GRANTED ==PermissionChecker.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
     }
 }

@@ -31,7 +31,6 @@ public abstract class BaseEngine implements Engine {
             execute(request,callBack);
         } catch (ServerException e) {
             callBack.onError(e);
-            e.printStackTrace();
         }
     }
 
@@ -41,13 +40,21 @@ public abstract class BaseEngine implements Engine {
     }
 
     /**
-     * 執行http請求
+     * 执行http請求
      */
     public String execute(BaseRequest request,ICallback callBack) throws ServerException{
 
-        if(!HttpUtils.isNetworkConnected() && hasCache(request)){ // 无网络，读缓存
-            return getCache(request,callBack);
+        if(!HttpUtils.isNetworkConnected()){ // 无网络，读缓存
+            if(hasCache(request)){
+                return getCache(request,callBack);
+            }
+            throw new ServerException(ServerException.NO_NET_WORK,"no network");
         }
+
+        if(!HttpUtils.hasPermissions()){  // 无权限，直接请求网络
+            return executeMethod(request,callBack);
+        }
+
         request.addHeaders(httpConfig.getCommonHeaders());
         LogUtils.print(request.toString());
         String response = null;
@@ -89,7 +96,7 @@ public abstract class BaseEngine implements Engine {
             case DOWNLOAD:
                 if(callBack == NULL_CALLBACK){
                 }else{
-                    download((DownloadRequest) request, (FileCallback) callBack);
+                    downloadFile((DownloadRequest) request, (FileCallback) callBack);
                 }
                 break;
         }
@@ -100,7 +107,7 @@ public abstract class BaseEngine implements Engine {
      * 校验缓存是否存在
      */
     private boolean hasCache(BaseRequest request) {
-        return httpConfig.cache() != null && httpConfig.cache().hasCache(request.toCacheKey());
+        return HttpUtils.hasPermissions() && httpConfig.cache() != null && httpConfig.cache().hasCache(request.toCacheKey());
     }
 
     /**

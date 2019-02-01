@@ -1,14 +1,19 @@
 package zcdog.com.mhttp.engine;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
@@ -84,7 +89,7 @@ public class HttpEngine extends BaseEngine {
                 setCache(request, response);
                 return response;
             } else {
-                throw new ServerException(responseCode,connection.getResponseMessage());
+                throw new ServerException(responseCode, connection.getResponseMessage());
             }
         } catch (final IOException e) {
             throw new ServerException(e);
@@ -109,6 +114,7 @@ public class HttpEngine extends BaseEngine {
             }
         });
     }
+
     @Override
     public String post(PostRequest request) throws ServerException {
         try {
@@ -143,7 +149,7 @@ public class HttpEngine extends BaseEngine {
                 setCache(request, response);
                 return response;
             } else {
-                throw new ServerException(responseCode,connection.getResponseMessage() );
+                throw new ServerException(responseCode, connection.getResponseMessage());
             }
         } catch (final IOException e) {
             throw new ServerException(e);
@@ -151,12 +157,13 @@ public class HttpEngine extends BaseEngine {
             throw e;
         }
     }
+
     /**
      * *********************************DOWN********************************
      */
     @Override
     public File downloadFile(DownloadRequest request) throws ServerException {
-        return downloadFile(request,null);
+        return download(request, null);
     }
 
     @Override
@@ -168,23 +175,23 @@ public class HttpEngine extends BaseEngine {
             connection.setRequestMethod("GET");
             connection.connect();
             int responseCode = connection.getResponseCode();
-            if(responseCode == HttpURLConnection.HTTP_OK) {
+            if (responseCode == HttpURLConnection.HTTP_OK) {
                 return connection.getInputStream();
-            }else{
-                throw new ServerException(connection.getResponseCode(),connection.getResponseMessage());
+            } else {
+                throw new ServerException(connection.getResponseCode(), connection.getResponseMessage());
             }
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new ServerException(e);
         }
     }
 
     @Override
-    public void download(final DownloadRequest request, final FileCallback callback) {
+    public void downloadFile(final DownloadRequest request, final FileCallback callback) {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    callback.onSuccess(downloadFile(request,callback));
+                    callback.onSuccess(download(request, callback));
                 } catch (ServerException e) {
                     callback.onError(e);
                 }
@@ -192,7 +199,7 @@ public class HttpEngine extends BaseEngine {
         });
     }
 
-    private File downloadFile(final DownloadRequest request, final FileCallback fileCallback) throws ServerException {
+    private File download(final DownloadRequest request, final FileCallback fileCallback) throws ServerException {
         try {
             URL url = new URL(request.url());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -200,26 +207,26 @@ public class HttpEngine extends BaseEngine {
             connection.setRequestMethod("GET");
             connection.connect();
             int responseCode = connection.getResponseCode();
-            if(responseCode == HttpURLConnection.HTTP_OK){
+            if (responseCode == HttpURLConnection.HTTP_OK) {
                 InputStream inputStream = connection.getInputStream();
                 File dir = new File(request.getDesPath());
-                if (!dir.exists()){
+                if (!dir.exists()) {
                     dir.mkdirs();
                 }
                 File file = new File(dir, request.getFileName());//根据目录和文件名得到file对象
                 FileOutputStream fos = new FileOutputStream(file);
-                byte[] buf = new byte[1024*8];
+                byte[] buf = new byte[1024 * 8];
                 int length;
                 int totalLength = connection.getContentLength();
                 int currLength = 0;
-                while ((length = inputStream.read(buf)) != -1){
+                while ((length = inputStream.read(buf)) != -1) {
 
                     fos.write(buf, 0, length);
 
                     currLength += length;
 
-                    if(fileCallback != null){
-                        fileCallback.onProgress(totalLength,currLength);
+                    if (fileCallback != null) {
+                        fileCallback.onProgress(totalLength, currLength);
                     }
                 }
                 fos.flush();
@@ -227,8 +234,8 @@ public class HttpEngine extends BaseEngine {
                 fos.close();
                 connection.disconnect();
                 return file;
-            }else {
-                throw new ServerException(responseCode,connection.getResponseMessage());
+            } else {
+                throw new ServerException(responseCode, connection.getResponseMessage());
             }
         } catch (IOException e) {
             throw new ServerException(e);
@@ -240,14 +247,70 @@ public class HttpEngine extends BaseEngine {
      * *********************************UPLOAD********************************
      */
     @Override
-    public void upload(UploadRequest request, FileCallback callback) {
+    public void uploadFile(UploadRequest request, FileCallback callback) {
+        try {
+            URL url = new URL(request.url());
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setDoInput(true);
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Content-Type", "file/*");//设置数据类型
+            connection.connect();
+
+            OutputStream outputStream = connection.getOutputStream();
+
+            if(request.params() != null){
+                for (Map.Entry<String, Object> param : request.params().entrySet()) {
+                    Object object = param.getValue();
+                    if (object instanceof File) {
+
+                    }
+                }
+            }
+            HashMap<String, Object> params = request.params();
+            FileInputStream fileInputStream = new FileInputStream(new File(""));//把文件封装成一个流
+            int length = -1;
+            byte[] bytes = new byte[1024];
+            while ((length = fileInputStream.read(bytes)) != -1) {
+                outputStream.write(bytes, 0, length);//写的具体操作
+            }
+            fileInputStream.close();
+            outputStream.close();
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                StringBuilder sb = new StringBuilder();
+                //得到响应流
+                InputStream is = connection.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is, "utf-8"));
+
+                String line = "";
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append("\n");
+                }
+                is.close();
+                connection.disconnect();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void uploadFiles(UploadRequest request, FileCallback callback) {
 
     }
 
 
+    @Override
+    public String uploadFile(UploadRequest request) throws ServerException {
+        return null;
+    }
 
     @Override
-    public String upload(UploadRequest request) throws ServerException {
+    public String uploadFiles(UploadRequest request) throws ServerException {
         return null;
     }
 

@@ -29,19 +29,22 @@ public interface Engine {
         }
     };
 
+
     void initConfig(HttpConfig httpConfig);
 
     void get(GetRequest request, ICallback callback);
     void post(PostRequest request, ICallback callback);
-    void download(DownloadRequest request, FileCallback callback);
-    void upload(UploadRequest request, FileCallback callback);
+    void downloadFile(DownloadRequest request, FileCallback callback);
+    void uploadFile(UploadRequest request, FileCallback callback);
+    void uploadFiles(UploadRequest request, FileCallback callback);
 
     String get(GetRequest request) throws ServerException;
     String post(PostRequest request) throws ServerException;
     File downloadFile(DownloadRequest request) throws ServerException;
     InputStream download(DownloadRequest request) throws ServerException;
 
-    String upload(UploadRequest request) throws ServerException;
+    String uploadFile(UploadRequest request) throws ServerException;
+    String uploadFiles(UploadRequest request) throws ServerException;
 
     void enqueue(BaseRequest request, ICallback callBack);
     String execute(BaseRequest request) throws ServerException;

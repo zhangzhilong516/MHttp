@@ -3,6 +3,7 @@ package zcdog.com.mhttp.request;
 import android.text.TextUtils;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.HashMap;
 
 import zcdog.com.mhttp.MHttpClient;
@@ -25,9 +26,12 @@ public class DownloadRequest extends BaseRequest {
 
     @Override
     public File execute() throws ServerException {
-        return MHttpClient.getInstance().engine().download(this);
+        return MHttpClient.getInstance().engine().downloadFile(this);
     }
 
+    public InputStream executeIo() throws ServerException{
+        return MHttpClient.getInstance().engine().download(this);
+    }
     public String getDesPath() {
         if (mParams == null) {
             throw new IllegalStateException("there is no desPath");
@@ -115,8 +119,12 @@ public class DownloadRequest extends BaseRequest {
         }
 
         @Override
-        protected BaseRequest build() {
+        protected DownloadRequest build() {
             return new DownloadRequest(this);
+        }
+
+        public InputStream executeIo() throws ServerException{
+            return build().executeIo();
         }
     }
 }

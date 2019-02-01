@@ -1,10 +1,14 @@
 package zcdog.com.mhttp.engine;
 
 
+import android.text.TextUtils;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.FileNameMap;
+import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +17,7 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -243,7 +248,7 @@ public class OkhttpEngine extends BaseEngine {
 
 
     @Override
-    public void download(final DownloadRequest request, final FileCallback fileCallback) {
+    public void downloadFile(final DownloadRequest request, final FileCallback fileCallback) {
         Request okRequest = new Request.Builder().url(request.url()).build();
         okHttpClient.newCall(okRequest).enqueue(new Callback() {
             @Override
@@ -294,17 +299,54 @@ public class OkhttpEngine extends BaseEngine {
         }
     }
 
+
     /**
      * **********************************UPLOAD*************************************
      */
 
     @Override
-    public String upload(UploadRequest request) throws ServerException {
+    public String uploadFile(UploadRequest request) throws ServerException {
+        MultipartBody.Builder builder = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM);
+        if(request.params() != null){
+            for (Map.Entry<String, Object> param : request.params().entrySet()) {
+                Object object = param.getValue();
+                if (object instanceof File) {
+                    File file = (File) object;
+                    builder.addFormDataPart(request.getFileParamName(), file.getName(),
+                            RequestBody.create(MediaType.parse(guessMimeType(file.getAbsolutePath())), file));
+                }else{
+                    builder.addFormDataPart(param.getKey(), (String) param.getValue());
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private String guessMimeType(String filePath) {
+        FileNameMap fileNameMap = URLConnection.getFileNameMap();
+
+        String mimType = fileNameMap.getContentTypeFor(filePath);
+
+        if(TextUtils.isEmpty(mimType)){
+            return ContentType.Stream_MediaType;
+        }
+        return mimType;
+    }
+
+    @Override
+    public String uploadFiles(UploadRequest request) throws ServerException {
         return null;
     }
 
     @Override
-    public void upload(final UploadRequest request, final FileCallback callback) {
+    public void uploadFile(UploadRequest request, FileCallback callback) {
+
+    }
+
+    @Override
+    public void uploadFiles(UploadRequest request, FileCallback callback) {
 
     }
 }

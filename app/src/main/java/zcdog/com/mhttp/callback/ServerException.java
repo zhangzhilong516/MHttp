@@ -11,6 +11,7 @@ import zcdog.com.mhttp.utils.LogUtils;
  */
 public class ServerException extends Exception {
     private static final String TAG = "ServerException";
+    public static final int NO_NET_WORK = -2;
     private int errorCode = -1;
     private String errorMsg = " ";
 
