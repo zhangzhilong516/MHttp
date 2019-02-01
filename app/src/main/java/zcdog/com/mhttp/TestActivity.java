@@ -10,6 +10,7 @@ import java.io.File;
 import zcdog.com.mhttp.cache.CacheMode;
 import zcdog.com.mhttp.callback.FileCallback;
 import zcdog.com.mhttp.callback.HttpCallback;
+import zcdog.com.mhttp.callback.ICallback;
 import zcdog.com.mhttp.callback.ServerException;
 import zcdog.com.mhttp.engine.HttpEngine;
 import zcdog.com.mhttp.utils.LogUtils;
@@ -25,7 +26,7 @@ public class TestActivity extends AppCompatActivity {
         textView = findViewById(R.id.text_view);
 //        MHttpClient.getInstance().exchangeEngine(new HttpEngine());
 //        MHttpClient.get()
-//                .url("www.baidu.com")
+//                .url("https://www.baidu.com")
 //                .callBack(new ICallback() {
 //            @Override
 //            public void onSuccess(final String result) {
@@ -42,7 +43,7 @@ public class TestActivity extends AppCompatActivity {
 //                e.printStackTrace();
 //            }
 //        });
-
+//
 //        MHttpClient.get()
 //                .addHeader("Accept-Version", "com.zcdog.customer+json;1.0")
 //                .addHeader("VersionCode", "7021")
@@ -137,7 +138,13 @@ public class TestActivity extends AppCompatActivity {
                 .url("http://static.zcdog.com/zcdog/apk/mall/6.0/1/Mall6.0_zcdog_web.apk")
                 .callBack(new FileCallback() {
                     @Override
-                    public void onProgress(int total, int curr) {
+                    public void onProgress(final long total, final long curr) {
+                        runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        textView.setText(curr * 100 /total+ "");
+                                    }
+                                });
                         LogUtils.print("total======" + total + "curr ================" + curr );
                     }
 

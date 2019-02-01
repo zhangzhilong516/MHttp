@@ -2,6 +2,8 @@ package zcdog.com.mhttp.engine;
 
 import android.text.TextUtils;
 
+import java.net.FileNameMap;
+import java.net.URLConnection;
 import java.util.concurrent.ExecutorService;
 
 import zcdog.com.mhttp.HttpConfig;
@@ -10,9 +12,11 @@ import zcdog.com.mhttp.callback.FileCallback;
 import zcdog.com.mhttp.callback.ServerException;
 import zcdog.com.mhttp.callback.ICallback;
 import zcdog.com.mhttp.request.BaseRequest;
+import zcdog.com.mhttp.request.ContentType;
 import zcdog.com.mhttp.request.DownloadRequest;
 import zcdog.com.mhttp.request.GetRequest;
 import zcdog.com.mhttp.request.PostRequest;
+import zcdog.com.mhttp.request.UploadRequest;
 import zcdog.com.mhttp.utils.HttpUtils;
 import zcdog.com.mhttp.utils.LogUtils;
 
@@ -36,7 +40,7 @@ public abstract class BaseEngine implements Engine {
 
     @Override
     public String execute(BaseRequest request) throws ServerException {
-        return execute(request,NULL_CALLBACK);
+        return execute(request,ICallback.NULL_CALLBACK);
     }
 
     /**
@@ -80,23 +84,30 @@ public abstract class BaseEngine implements Engine {
     private String executeMethod(final BaseRequest request,ICallback callBack) throws ServerException{
         switch (request.method()) {
             case GET:
-                if(callBack == NULL_CALLBACK){
+                if(callBack == ICallback.NULL_CALLBACK){
                     return get((GetRequest) request);
                 }else{
                      get((GetRequest) request,callBack);
                 }
                 break;
             case POST:
-                if(callBack == NULL_CALLBACK){
+                if(callBack == ICallback.NULL_CALLBACK){
                     return post((PostRequest) request);
                 }else{
                     post((PostRequest) request,callBack);
                 }
                 break;
             case DOWNLOAD:
-                if(callBack == NULL_CALLBACK){
+                if(callBack == ICallback.NULL_CALLBACK){
                 }else{
                     downloadFile((DownloadRequest) request, (FileCallback) callBack);
+                }
+                break;
+            case UPLOAD:
+                if(callBack == ICallback.NULL_CALLBACK){
+                    return uploadFile((UploadRequest) request);
+                }else{
+                    uploadFile((UploadRequest) request, (FileCallback) callBack);
                 }
                 break;
         }
@@ -117,7 +128,7 @@ public abstract class BaseEngine implements Engine {
         if (httpConfig.cache() == null) {
             throw new NullPointerException("Cache == null");
         }
-        if(callBack == NULL_CALLBACK){
+        if(callBack == ICallback.NULL_CALLBACK){
             String cacheResponse = httpConfig.cache().get(request.toCacheKey());
             LogUtils.print("RequestUrl ==" + request.toCacheKey() + "\n" + "CacheResponse==" + cacheResponse);
             return cacheResponse;
@@ -150,5 +161,17 @@ public abstract class BaseEngine implements Engine {
                 callback.onError(e);
             }
         });
+    }
+
+
+    protected String guessMimeType(String filePath) {
+        FileNameMap fileNameMap = URLConnection.getFileNameMap();
+
+        String mimType = fileNameMap.getContentTypeFor(filePath);
+
+        if(TextUtils.isEmpty(mimType)){
+            return ContentType.Stream_MediaType;
+        }
+        return mimType;
     }
 }

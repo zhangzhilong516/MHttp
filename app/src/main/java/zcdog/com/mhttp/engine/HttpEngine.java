@@ -2,6 +2,7 @@ package zcdog.com.mhttp.engine;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -11,14 +12,17 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.net.SocketException;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import okio.Utf8;
 import zcdog.com.mhttp.HttpConfig;
 import zcdog.com.mhttp.callback.FileCallback;
 import zcdog.com.mhttp.callback.ServerException;
@@ -36,6 +40,9 @@ import zcdog.com.mhttp.utils.HttpUtils;
  */
 public class HttpEngine extends BaseEngine {
 
+    private static final byte[] CRLF = {'\r', '\n'};
+    private static final byte[] DASH_DASH = {'-', '-'};
+    private static final byte[] COLON_SPACE = {':', ' '};
     public HttpEngine() {
         executorService = Executors.newCachedThreadPool();
     }
@@ -70,7 +77,7 @@ public class HttpEngine extends BaseEngine {
         try {
             URL url = new URL(request.url());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.addRequestProperty("Connection", "Keep-Alive");
+            connection.setRequestProperty("Connection", "Keep-Alive");
             connection.setRequestMethod("GET");
             connection.setReadTimeout(httpConfig.getReadTimeout());
             connection.setConnectTimeout(httpConfig.getConnectTimeout());
@@ -124,7 +131,7 @@ public class HttpEngine extends BaseEngine {
             connection.setDoOutput(true);
             connection.setDoInput(true);
             connection.setUseCaches(false);
-            connection.addRequestProperty("Connection", "Keep-Alive");
+            connection.setRequestProperty("Connection", "Keep-Alive");
             connection.setRequestProperty("Content-Type", request.contentType());
             connection.setReadTimeout(httpConfig.getReadTimeout());
             connection.setConnectTimeout(httpConfig.getConnectTimeout());
@@ -159,7 +166,7 @@ public class HttpEngine extends BaseEngine {
     }
 
     /**
-     * *********************************DOWN********************************
+     * *********************************DOWNLOAD********************************
      */
     @Override
     public File downloadFile(DownloadRequest request) throws ServerException {
@@ -171,7 +178,7 @@ public class HttpEngine extends BaseEngine {
         try {
             URL url = new URL(request.url());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.addRequestProperty("Connection", "Keep-Alive");
+            connection.setRequestProperty("Connection", "Keep-Alive");
             connection.setRequestMethod("GET");
             connection.connect();
             int responseCode = connection.getResponseCode();
@@ -203,7 +210,7 @@ public class HttpEngine extends BaseEngine {
         try {
             URL url = new URL(request.url());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.addRequestProperty("Connection", "Keep-Alive");
+            connection.setRequestProperty("Connection", "Keep-Alive");
             connection.setRequestMethod("GET");
             connection.connect();
             int responseCode = connection.getResponseCode();
@@ -249,69 +256,87 @@ public class HttpEngine extends BaseEngine {
     @Override
     public void uploadFile(UploadRequest request, FileCallback callback) {
         try {
+            callback.onSuccess(uploadFile(request));
+        } catch (ServerException e) {
+            callback.onError(e);
+        }
+    }
+
+    @Override
+    public String uploadFile(UploadRequest request) throws ServerException {
+        try {
+            final String BOUNDARY = UUID.randomUUID().toString();
             URL url = new URL(request.url());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
             connection.setDoInput(true);
             connection.setUseCaches(false);
-            connection.setRequestProperty("Content-Type", "file/*");//设置数据类型
+            connection.setRequestProperty("Connection", "Keep-Alive");
+            connection.setRequestProperty("Content-Type","multipart/form-data; BOUNDARY=" + BOUNDARY);
             connection.connect();
 
-            OutputStream outputStream = connection.getOutputStream();
+            DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream());
 
-            if(request.params() != null){
-                for (Map.Entry<String, Object> param : request.params().entrySet()) {
-                    Object object = param.getValue();
-                    if (object instanceof File) {
+            for (Map.Entry<String, Object> param : request.params().entrySet()) {
+                Object object = param.getValue();
+                if (object instanceof File) {
+                    continue;
+                }
+                outputStream.write(DASH_DASH);
+                outputStream.write(BOUNDARY.getBytes());
+                outputStream.write(CRLF);
+                outputStream.writeBytes(("Content-Disposition: form-data; name=\"" + param.getKey() + "\""));
+                outputStream.write(CRLF);
+                outputStream.write(CRLF);
+                outputStream.writeBytes(URLEncoder.encode((String) param.getValue(), "utf-8"));
+                outputStream.write(CRLF);
+            }
 
-                    }
+            for (Map.Entry<String, Object> param : request.params().entrySet()) {
+                Object object = param.getValue();
+                if (object instanceof File) {
+                    File file = (File) object;
+                    outputStream.write(DASH_DASH);
+                    outputStream.writeBytes(BOUNDARY);
+                    outputStream.write(CRLF);
+                    outputStream.writeBytes(("Content-Disposition: form-data; " + "name=\""
+                            + request.getFileParamName() + "\"" + "; filename=\"" + file.getName() + "\""));
+                    outputStream.write(CRLF);
+                    outputStream.write(CRLF);
+                    writeFile(outputStream,file);
+                    outputStream.write(CRLF);
                 }
             }
-            HashMap<String, Object> params = request.params();
-            FileInputStream fileInputStream = new FileInputStream(new File(""));//把文件封装成一个流
-            int length = -1;
-            byte[] bytes = new byte[1024];
-            while ((length = fileInputStream.read(bytes)) != -1) {
-                outputStream.write(bytes, 0, length);//写的具体操作
-            }
-            fileInputStream.close();
+            outputStream.write(DASH_DASH);
+            outputStream.writeBytes(BOUNDARY);
+            outputStream.write(DASH_DASH);
+            outputStream.write(CRLF);
+            outputStream.flush();
             outputStream.close();
 
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                StringBuilder sb = new StringBuilder();
-                //得到响应流
-                InputStream is = connection.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(is, "utf-8"));
-
-                String line = "";
-                while ((line = reader.readLine()) != null) {
-                    sb.append(line).append("\n");
-                }
-                is.close();
+                String response = HttpUtils.inputStreamToString(connection.getInputStream());
                 connection.disconnect();
+                return response;
+            }else{
+                throw new ServerException(responseCode, connection.getResponseMessage());
             }
-
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new ServerException(e);
         }
     }
 
-    @Override
-    public void uploadFiles(UploadRequest request, FileCallback callback) {
 
+    private void writeFile(DataOutputStream outputStream, File file) throws IOException{
+        FileInputStream fileInputStream = new FileInputStream(file);
+        byte[] bytes = new byte[1024];
+        int length;
+        while ((length = fileInputStream.read(bytes)) != -1) {
+            outputStream.write(bytes, 0, length);
+        }
+        fileInputStream.close();
+        outputStream.flush();
     }
-
-
-    @Override
-    public String uploadFile(UploadRequest request) throws ServerException {
-        return null;
-    }
-
-    @Override
-    public String uploadFiles(UploadRequest request) throws ServerException {
-        return null;
-    }
-
 }

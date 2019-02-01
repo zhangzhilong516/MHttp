@@ -19,24 +19,12 @@ import zcdog.com.mhttp.request.UploadRequest;
  * @des:
  */
 public interface Engine {
-    ICallback NULL_CALLBACK = new ICallback() {
-        @Override
-        public void onSuccess(String result) {
-        }
-
-        @Override
-        public void onError(ServerException e) {
-        }
-    };
-
-
     void initConfig(HttpConfig httpConfig);
 
     void get(GetRequest request, ICallback callback);
     void post(PostRequest request, ICallback callback);
     void downloadFile(DownloadRequest request, FileCallback callback);
     void uploadFile(UploadRequest request, FileCallback callback);
-    void uploadFiles(UploadRequest request, FileCallback callback);
 
     String get(GetRequest request) throws ServerException;
     String post(PostRequest request) throws ServerException;
@@ -44,7 +32,6 @@ public interface Engine {
     InputStream download(DownloadRequest request) throws ServerException;
 
     String uploadFile(UploadRequest request) throws ServerException;
-    String uploadFiles(UploadRequest request) throws ServerException;
 
     void enqueue(BaseRequest request, ICallback callBack);
     String execute(BaseRequest request) throws ServerException;

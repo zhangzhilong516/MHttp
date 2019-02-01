@@ -10,4 +10,5 @@ public class ContentType {
     public static final String Json_MediaType = "application/json;charset=utf-8";
     public static final String Text_MediaType = "text/xml;charset=utf-8";
     public static final String Stream_MediaType = "application/octet-stream";
+    public static final String MULTIPART_MediaType = "multipart/form-data";
 }

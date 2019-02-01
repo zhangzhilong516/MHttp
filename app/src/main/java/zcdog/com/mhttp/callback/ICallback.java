@@ -6,6 +6,15 @@ package zcdog.com.mhttp.callback;
  * @des:
  */
 public interface ICallback {
+    ICallback NULL_CALLBACK = new ICallback() {
+        @Override
+        public void onSuccess(String result) {
+        }
+
+        @Override
+        public void onError(ServerException e) {
+        }
+    };
     void onSuccess(String result);
     void onError(ServerException e);
 }

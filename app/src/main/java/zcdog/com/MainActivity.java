@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
         File file = new File(Environment.getExternalStorageDirectory() + File.separator + "DiskCache");
         Cache cache = new DiskCache(file);
         HttpConfig httpConfig =  new HttpConfig.Builder().isDebug(true).cache(cache).build();
-        MHttpClient.getInstance().config(httpConfig);
+        MHttpClient.getInstance().init(this.getApplicationContext()).config(httpConfig);
     }
 
     public void Test(View view) {

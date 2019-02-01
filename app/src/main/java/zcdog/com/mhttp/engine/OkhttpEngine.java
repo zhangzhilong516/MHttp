@@ -30,6 +30,7 @@ import zcdog.com.mhttp.callback.ICallback;
 import zcdog.com.mhttp.request.ContentType;
 import zcdog.com.mhttp.request.DownloadRequest;
 import zcdog.com.mhttp.request.GetRequest;
+import zcdog.com.mhttp.request.OkMultipartBody;
 import zcdog.com.mhttp.request.PostRequest;
 import zcdog.com.mhttp.request.UploadRequest;
 import zcdog.com.mhttp.utils.HttpUtils;
@@ -81,15 +82,16 @@ public class OkhttpEngine extends BaseEngine {
             if (execute.isSuccessful()) {
                 String response = execute.body().string();
                 LogUtils.print("RequestUrl ==" + request.toCacheKey() + "\n" + "NetworkResponse==" + response);
-                setCache(request,response);
+                setCache(request, response);
                 return response;
             } else {
-                throw new ServerException(execute.code(),execute.message());
+                throw new ServerException(execute.code(), execute.message());
             }
         } catch (IOException e) {
             throw new ServerException(e);
         }
     }
+
     @Override
     public void get(final GetRequest request, final ICallback callback) {
         Request.Builder builder = new Request.Builder()
@@ -107,8 +109,7 @@ public class OkhttpEngine extends BaseEngine {
         okHttpClient.newCall(builder.build()).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, final IOException e) {
-                e.printStackTrace();
-                onError(callback,new ServerException(e));
+                onError(callback, new ServerException(e));
             }
 
             @Override
@@ -116,9 +117,9 @@ public class OkhttpEngine extends BaseEngine {
                 if (response.isSuccessful()) {
                     String result = response.body().string();
                     callback.onSuccess(result);
-                    setCache(request,result);
+                    setCache(request, result);
                 } else {
-                    onError(callback,new ServerException(response.code(),response.message()));
+                    onError(callback, new ServerException(response.code(), response.message()));
                 }
             }
         });
@@ -165,10 +166,10 @@ public class OkhttpEngine extends BaseEngine {
             Response execute = okHttpClient.newCall(builder.build()).execute();
             if (execute.isSuccessful()) {
                 String response = execute.body().string();
-                setCache(request,response);
+                setCache(request, response);
                 return response;
             } else {
-                throw new ServerException(execute.code(),execute.message());
+                throw new ServerException(execute.code(), execute.message());
             }
         } catch (IOException e) {
             throw new ServerException(e);
@@ -195,7 +196,7 @@ public class OkhttpEngine extends BaseEngine {
         okHttpClient.newCall(builder.build()).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, final IOException e) {
-               onError(callback,new ServerException(e));
+                onError(callback, new ServerException(e));
             }
 
             @Override
@@ -203,9 +204,9 @@ public class OkhttpEngine extends BaseEngine {
                 if (response.isSuccessful()) {
                     String result = response.body().string();
                     callback.onSuccess(result);
-                    setCache(request,result);
+                    setCache(request, result);
                 } else {
-                    onError(callback,new ServerException(response.code(),response.message()));
+                    onError(callback, new ServerException(response.code(), response.message()));
                 }
             }
         });
@@ -220,26 +221,26 @@ public class OkhttpEngine extends BaseEngine {
             Request okRequest = new Request.Builder().url(request.url()).build();
 
             Response response = okHttpClient.newCall(okRequest).execute();
-            if(response.isSuccessful()){
+            if (response.isSuccessful()) {
                 InputStream inputStream = response.body().byteStream();
 
                 File dir = new File(request.getDesPath());
-                if (!dir.exists()){
+                if (!dir.exists()) {
                     dir.mkdirs();
                 }
                 File file = new File(dir, request.getFileName());
                 FileOutputStream fos = new FileOutputStream(file);
-                byte[] buf = new byte[1024*8];
+                byte[] buf = new byte[1024 * 8];
                 int length;
-                while ((length = inputStream.read(buf)) != -1){
+                while ((length = inputStream.read(buf)) != -1) {
                     fos.write(buf, 0, length);
                 }
                 fos.flush();
                 inputStream.close();
                 fos.close();
                 return file;
-            }else{
-                throw new ServerException(response.code(),response.message());
+            } else {
+                throw new ServerException(response.code(), response.message());
             }
         } catch (IOException e) {
             throw new ServerException(e);
@@ -255,24 +256,25 @@ public class OkhttpEngine extends BaseEngine {
             public void onFailure(Call call, IOException e) {
                 fileCallback.onError(new ServerException(e));
             }
+
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 InputStream inputStream = response.body().byteStream();
                 File dir = new File(request.getDesPath());
-                if (!dir.exists()){
+                if (!dir.exists()) {
                     dir.mkdirs();
                 }
                 File file = new File(dir, request.getFileName());
                 FileOutputStream fos = new FileOutputStream(file);
-                byte[] buf = new byte[1024*8];
+                byte[] buf = new byte[1024 * 8];
                 int length;
-                int totalLength = (int) response.body().contentLength();
-                int currLength = 0;
-                while ((length = inputStream.read(buf)) != -1){
+                long totalLength = response.body().contentLength();
+                long currLength = 0;
+                while ((length = inputStream.read(buf)) != -1) {
                     fos.write(buf, 0, length);
                     currLength += length;
-                    if(fileCallback != null){
-                        fileCallback.onProgress(totalLength,currLength);
+                    if (fileCallback != null) {
+                        fileCallback.onProgress(totalLength, currLength);
                     }
                 }
                 fos.flush();
@@ -289,10 +291,10 @@ public class OkhttpEngine extends BaseEngine {
             Request okRequest = new Request.Builder().url(request.url()).build();
 
             Response response = okHttpClient.newCall(okRequest).execute();
-            if(response.isSuccessful()){
+            if (response.isSuccessful()) {
                 return response.body().byteStream();
-            }else{
-                throw new ServerException(response.code(),response.message());
+            } else {
+                throw new ServerException(response.code(), response.message());
             }
         } catch (IOException e) {
             throw new ServerException(e);
@@ -308,45 +310,75 @@ public class OkhttpEngine extends BaseEngine {
     public String uploadFile(UploadRequest request) throws ServerException {
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
-        if(request.params() != null){
+        if (request.params() != null) {
             for (Map.Entry<String, Object> param : request.params().entrySet()) {
                 Object object = param.getValue();
                 if (object instanceof File) {
                     File file = (File) object;
                     builder.addFormDataPart(request.getFileParamName(), file.getName(),
                             RequestBody.create(MediaType.parse(guessMimeType(file.getAbsolutePath())), file));
-                }else{
+                } else {
                     builder.addFormDataPart(param.getKey(), (String) param.getValue());
                 }
             }
         }
+        OkMultipartBody okMultipartBody = new OkMultipartBody(builder.build());
 
-        return null;
-    }
-
-    private String guessMimeType(String filePath) {
-        FileNameMap fileNameMap = URLConnection.getFileNameMap();
-
-        String mimType = fileNameMap.getContentTypeFor(filePath);
-
-        if(TextUtils.isEmpty(mimType)){
-            return ContentType.Stream_MediaType;
+        final Request okRequest = new Request.Builder()
+                .url(request.url())
+                .post(okMultipartBody).build();
+        try {
+            Response execute = okHttpClient.newCall(okRequest).execute();
+            if (execute.isSuccessful()) {
+                String response = execute.body().string();
+                LogUtils.print("RequestUrl ==" + request.toCacheKey() + "\n" + "NetworkResponse==" + response);
+                return response;
+            } else {
+                throw new ServerException(execute.code(), execute.message());
+            }
+        } catch (IOException e) {
+            throw new ServerException(e);
         }
-        return mimType;
     }
 
     @Override
-    public String uploadFiles(UploadRequest request) throws ServerException {
-        return null;
+    public void uploadFile(final UploadRequest request, final FileCallback callback) {
+        MultipartBody.Builder builder = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM);
+        if (request.params() != null) {
+            for (Map.Entry<String, Object> param : request.params().entrySet()) {
+                Object object = param.getValue();
+                if (object instanceof File) {
+                    File file = (File) object;
+                    builder.addFormDataPart(request.getFileParamName(), file.getName(),
+                            RequestBody.create(MediaType.parse(guessMimeType(file.getAbsolutePath())), file));
+                } else {
+                    builder.addFormDataPart(param.getKey(), (String) param.getValue());
+                }
+            }
+        }
+        OkMultipartBody okMultipartBody = new OkMultipartBody(builder.build());
+
+        final Request okRequest = new Request.Builder()
+                .url(request.url())
+                .post(okMultipartBody).build();
+        okHttpClient.newCall(okRequest).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, final IOException e) {
+                onError(callback, new ServerException(e));
+            }
+
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    String responseStr = response.body().string();
+                    LogUtils.print("RequestUrl ==" + request.toCacheKey() + "\n" + "NetworkResponse==" + responseStr);
+                    callback.onSuccess(responseStr);
+                } else {
+                    onError(callback, new ServerException(response.code(), response.message()));
+                }
+            }
+        });
     }
 
-    @Override
-    public void uploadFile(UploadRequest request, FileCallback callback) {
-
-    }
-
-    @Override
-    public void uploadFiles(UploadRequest request, FileCallback callback) {
-
-    }
 }

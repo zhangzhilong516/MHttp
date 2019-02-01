@@ -3,6 +3,7 @@ package zcdog.com.mhttp.callback;
 import java.lang.reflect.ParameterizedType;
 
 import zcdog.com.mhttp.MHttpClient;
+import zcdog.com.mhttp.engine.BaseEngine;
 import zcdog.com.mhttp.engine.Engine;
 
 /**
@@ -14,7 +15,8 @@ public abstract class HttpCallback<T> implements ICallback {
 
     public void onSuccess(String result){
         try {
-            Engine.NULL_CALLBACK.onSuccess(result);
+
+            NULL_CALLBACK.onSuccess(result);
 
             final T convert = MHttpClient.getInstance().getJsonConvert().convert(result, getType(this));
             MHttpClient.getInstance().runOnUiThread(new Runnable() {
