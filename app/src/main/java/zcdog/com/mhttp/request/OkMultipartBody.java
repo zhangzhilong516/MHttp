@@ -2,19 +2,18 @@ package zcdog.com.mhttp.request;
 
 
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import java.io.IOException;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okio.Buffer;
 import okio.BufferedSink;
 import okio.ForwardingSink;
 import okio.Okio;
-import zcdog.com.mhttp.callback.FileCallback;
+import zcdog.com.mhttp.callback.HttpCallback;
+import zcdog.com.mhttp.callback.ICallback;
 
 /**
  * @author: zhangzhilong
@@ -23,15 +22,15 @@ import zcdog.com.mhttp.callback.FileCallback;
  */
 public class OkMultipartBody extends RequestBody{
     private MultipartBody mMultipartBody;
-    private FileCallback fileCallback;
+    private ICallback callback;
     private int mCurrentLength;
     public OkMultipartBody(MultipartBody multipartBody){
         this.mMultipartBody = multipartBody;
     }
 
-    public OkMultipartBody(MultipartBody multipartBody , FileCallback callback){
+    public OkMultipartBody(MultipartBody multipartBody , ICallback callback){
         this.mMultipartBody = multipartBody;
-        this.fileCallback = callback;
+        this.callback = callback;
     }
 
     @Nullable
@@ -52,8 +51,8 @@ public class OkMultipartBody extends RequestBody{
             @Override
             public void write(Buffer source, long byteCount) throws IOException {
                 mCurrentLength += byteCount;
-                if(fileCallback!=null){
-                    fileCallback.onProgress(contentLength,mCurrentLength);
+                if(callback!=null && callback instanceof HttpCallback){
+                    ((HttpCallback)callback).onProgress(contentLength,mCurrentLength);
                 }
                 super.write(source, byteCount);
             }

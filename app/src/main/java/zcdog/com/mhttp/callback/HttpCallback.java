@@ -41,4 +41,6 @@ public abstract class HttpCallback<T> implements ICallback {
         return (Class<T>) parameterizedType.getActualTypeArguments()[0];
     }
     public abstract void onSuccess(T t);
+    public void onProgress(long total,long curr){
+    }
 }

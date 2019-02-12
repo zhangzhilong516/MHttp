@@ -8,6 +8,4 @@ import java.io.File;
  * @des:
  */
 public abstract class FileCallback extends HttpCallback<File>{
-    public void onProgress(long total,long curr){
-    }
 }

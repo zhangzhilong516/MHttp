@@ -279,7 +279,6 @@ public class HttpEngine extends BaseEngine {
             connection.setConnectTimeout(httpConfig.getConnectTimeout());
             connection.setRequestProperty("Connection", "Keep-Alive");
             connection.setRequestProperty("Content-Type","multipart/form-data; boundary=" + request.BOUNDARY);
-//            connection.setRequestProperty("Content-Type",Long.toString(request.getContentLength()));
 
             if (request.headers() != null) {
                 for (Map.Entry<String, String> entry : request.headers().entrySet()) {

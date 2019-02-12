@@ -166,15 +166,20 @@ public class TestActivity extends AppCompatActivity {
                 .addFile("headIcon",file)
                 .addHeader("Accept-Version", "com.zcdog.customer+json;1.0")
                 .addHeader("Token","67da40d0-3dfc-4099-9b3e-7061db7bc48d")
-                .callBack(new ICallback() {
+                .callBack(new HttpCallback<String>() {
                     @Override
-                    public void onSuccess(String response) {
-                        LogUtils.print(response);
+                    public void onSuccess(String s) {
+                        LogUtils.print(s);
                     }
 
                     @Override
                     public void onError(ServerException e) {
                         e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onProgress(long total, long curr) {
+                        LogUtils.print("total ===" + total + "; curr ===" + curr);
                     }
                 });
     }

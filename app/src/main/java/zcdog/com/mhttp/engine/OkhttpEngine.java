@@ -26,6 +26,7 @@ import okhttp3.Response;
 import zcdog.com.mhttp.HttpConfig;
 import zcdog.com.mhttp.MHttpClient;
 import zcdog.com.mhttp.callback.FileCallback;
+import zcdog.com.mhttp.callback.HttpCallback;
 import zcdog.com.mhttp.callback.ServerException;
 import zcdog.com.mhttp.callback.ICallback;
 import zcdog.com.mhttp.request.ContentType;
@@ -419,8 +420,7 @@ public class OkhttpEngine extends BaseEngine {
                 }
             }
         }
-
-        OkMultipartBody okMultipartBody = new OkMultipartBody(builder.build());
+        OkMultipartBody okMultipartBody = new OkMultipartBody(builder.build(),callback);
 
         final Request okRequest = okRequestBuilder
                 .post(okMultipartBody).build();

@@ -16,8 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.security.auth.callback.Callback;
+
 import zcdog.com.mhttp.MHttpClient;
 import zcdog.com.mhttp.cache.CacheMode;
+import zcdog.com.mhttp.callback.HttpCallback;
 import zcdog.com.mhttp.callback.ICallback;
 import zcdog.com.mhttp.callback.ServerException;
 
@@ -32,12 +35,16 @@ public class UploadRequest extends BaseRequest {
     public String BOUNDARY;
     public String START_BOUNDARY;
     public String END_BOUNDARY;
+    private ICallback callback;
 
     public UploadRequest(Builder builder) {
         super(builder);
         BOUNDARY = "HTTP" + UUID.randomUUID().toString();
         START_BOUNDARY = LINE_LINE + BOUNDARY;
         END_BOUNDARY = START_BOUNDARY + LINE_LINE;
+        if (builder.iCallback != null) {
+            this.callback = builder.iCallback;
+        }
     }
 
 
@@ -116,10 +123,15 @@ public class UploadRequest extends BaseRequest {
 
     private void writeFile(OutputStream outputStream, File file) throws IOException {
         FileInputStream fileInputStream = new FileInputStream(file);
-        byte[] bytes = new byte[1024];
+        byte[] bytes = new byte[1024*8];
         int length;
+        int currLength = 0;
         while ((length = fileInputStream.read(bytes)) != -1) {
             outputStream.write(bytes, 0, length);
+            if (callback != null && callback instanceof HttpCallback) {
+                currLength += length;
+                ((HttpCallback) callback).onProgress(file.length(), currLength);
+            }
         }
         outputStream.write(CRLF.getBytes());
         fileInputStream.close();
@@ -141,6 +153,7 @@ public class UploadRequest extends BaseRequest {
     public static class Builder extends BaseRequest.Builder {
         String fileParamName;
         List<File> fileArray;
+        ICallback iCallback;
 
         public Builder(Method method) {
             super(method);
@@ -211,5 +224,10 @@ public class UploadRequest extends BaseRequest {
             return new UploadRequest(this);
         }
 
+        @Override
+        public void callBack(ICallback callback) {
+            this.iCallback = callback;
+            super.callBack(callback);
+        }
     }
 }
