@@ -1,6 +1,5 @@
 package zcdog.com.mhttp.engine;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -8,21 +7,18 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import okio.Utf8;
 import zcdog.com.mhttp.HttpConfig;
 import zcdog.com.mhttp.callback.FileCallback;
 import zcdog.com.mhttp.callback.ServerException;
@@ -40,9 +36,8 @@ import zcdog.com.mhttp.utils.HttpUtils;
  */
 public class HttpEngine extends BaseEngine {
 
-    private static final byte[] CRLF = {'\r', '\n'};
-    private static final byte[] DASH_DASH = {'-', '-'};
-    private static final byte[] COLON_SPACE = {':', ' '};
+    private static final String CRLF = "\r\n";
+    private static final String LINE_LINE = "--";
     public HttpEngine() {
         executorService = Executors.newCachedThreadPool();
     }
@@ -179,6 +174,8 @@ public class HttpEngine extends BaseEngine {
             URL url = new URL(request.url());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestProperty("Connection", "Keep-Alive");
+            connection.setReadTimeout(httpConfig.getReadTimeout());
+            connection.setConnectTimeout(httpConfig.getConnectTimeout());
             connection.setRequestMethod("GET");
             connection.connect();
             int responseCode = connection.getResponseCode();
@@ -211,6 +208,8 @@ public class HttpEngine extends BaseEngine {
             URL url = new URL(request.url());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestProperty("Connection", "Keep-Alive");
+            connection.setReadTimeout(httpConfig.getReadTimeout());
+            connection.setConnectTimeout(httpConfig.getConnectTimeout());
             connection.setRequestMethod("GET");
             connection.connect();
             int responseCode = connection.getResponseCode();
@@ -254,64 +253,47 @@ public class HttpEngine extends BaseEngine {
      * *********************************UPLOAD********************************
      */
     @Override
-    public void uploadFile(UploadRequest request, FileCallback callback) {
-        try {
-            callback.onSuccess(uploadFile(request));
-        } catch (ServerException e) {
-            callback.onError(e);
-        }
+    public void uploadFile(final UploadRequest request, final ICallback callback) {
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    callback.onSuccess(uploadFile(request));
+                } catch (ServerException e) {
+                    callback.onError(e);
+                }
+            }
+        });
     }
 
     @Override
     public String uploadFile(UploadRequest request) throws ServerException {
         try {
-            final String BOUNDARY = UUID.randomUUID().toString();
             URL url = new URL(request.url());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
             connection.setDoInput(true);
             connection.setUseCaches(false);
+            connection.setReadTimeout(httpConfig.getReadTimeout());
+            connection.setConnectTimeout(httpConfig.getConnectTimeout());
             connection.setRequestProperty("Connection", "Keep-Alive");
-            connection.setRequestProperty("Content-Type","multipart/form-data; BOUNDARY=" + BOUNDARY);
+            connection.setRequestProperty("Content-Type","multipart/form-data; boundary=" + request.BOUNDARY);
+//            connection.setRequestProperty("Content-Type",Long.toString(request.getContentLength()));
+
+            if (request.headers() != null) {
+                for (Map.Entry<String, String> entry : request.headers().entrySet()) {
+                    connection.setRequestProperty(entry.getKey(), entry.getValue());
+                }
+            }
+
             connection.connect();
 
-            DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream());
+            OutputStream outputStream = connection.getOutputStream();
+            request.writeParams(outputStream);
+            request.writeBinary(outputStream);
 
-            for (Map.Entry<String, Object> param : request.params().entrySet()) {
-                Object object = param.getValue();
-                if (object instanceof File) {
-                    continue;
-                }
-                outputStream.write(DASH_DASH);
-                outputStream.write(BOUNDARY.getBytes());
-                outputStream.write(CRLF);
-                outputStream.writeBytes(("Content-Disposition: form-data; name=\"" + param.getKey() + "\""));
-                outputStream.write(CRLF);
-                outputStream.write(CRLF);
-                outputStream.writeBytes(URLEncoder.encode((String) param.getValue(), "utf-8"));
-                outputStream.write(CRLF);
-            }
-
-            for (Map.Entry<String, Object> param : request.params().entrySet()) {
-                Object object = param.getValue();
-                if (object instanceof File) {
-                    File file = (File) object;
-                    outputStream.write(DASH_DASH);
-                    outputStream.writeBytes(BOUNDARY);
-                    outputStream.write(CRLF);
-                    outputStream.writeBytes(("Content-Disposition: form-data; " + "name=\""
-                            + request.getFileParamName() + "\"" + "; filename=\"" + file.getName() + "\""));
-                    outputStream.write(CRLF);
-                    outputStream.write(CRLF);
-                    writeFile(outputStream,file);
-                    outputStream.write(CRLF);
-                }
-            }
-            outputStream.write(DASH_DASH);
-            outputStream.writeBytes(BOUNDARY);
-            outputStream.write(DASH_DASH);
-            outputStream.write(CRLF);
+            outputStream.write(request.END_BOUNDARY.getBytes());
             outputStream.flush();
             outputStream.close();
 
@@ -328,15 +310,4 @@ public class HttpEngine extends BaseEngine {
         }
     }
 
-
-    private void writeFile(DataOutputStream outputStream, File file) throws IOException{
-        FileInputStream fileInputStream = new FileInputStream(file);
-        byte[] bytes = new byte[1024];
-        int length;
-        while ((length = fileInputStream.read(bytes)) != -1) {
-            outputStream.write(bytes, 0, length);
-        }
-        fileInputStream.close();
-        outputStream.flush();
-    }
 }

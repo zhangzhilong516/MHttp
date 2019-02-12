@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.net.FileNameMap;
 import java.net.URLConnection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -308,25 +309,56 @@ public class OkhttpEngine extends BaseEngine {
 
     @Override
     public String uploadFile(UploadRequest request) throws ServerException {
+        final Request.Builder okRequestBuilder = new Request.Builder().url(request.url());
+
+        if (request.headers() != null) {
+            for (Map.Entry<String, String> header : request.headers().entrySet()) {
+                if (header.getValue() == null) {
+                    continue;
+                }
+                okRequestBuilder.header(header.getKey(), header.getValue());
+            }
+        }
+
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
         if (request.params() != null) {
             for (Map.Entry<String, Object> param : request.params().entrySet()) {
-                Object object = param.getValue();
-                if (object instanceof File) {
-                    File file = (File) object;
-                    builder.addFormDataPart(request.getFileParamName(), file.getName(),
-                            RequestBody.create(MediaType.parse(guessMimeType(file.getAbsolutePath())), file));
-                } else {
+                Object value = param.getValue();
+
+                if(value instanceof String){
                     builder.addFormDataPart(param.getKey(), (String) param.getValue());
+                }else if(value instanceof File){
+                    File file = (File) value;
+                    builder.addFormDataPart(param.getKey(), file.getName(),
+                            RequestBody.create(MediaType.parse(guessMimeType(file.getAbsolutePath())), file));
+                }else if(value instanceof List){
+                    List list = (List) value;
+                    for (int i = 0; i < list.size() ; i++) {
+                        Object obj = list.get(i);
+                        if(obj instanceof File){
+                            File file = (File) obj;
+                            builder.addFormDataPart(param.getKey(), file.getName(),
+                                    RequestBody.create(MediaType.parse(guessMimeType(file.getAbsolutePath())), file));
+                        }else {
+                            throw new IllegalArgumentException();
+                        }
+                    }
+                }else {
+                    if(value == null){
+                        builder.addFormDataPart(param.getKey(), "");
+                    }else {
+                        builder.addFormDataPart(param.getKey(), (String) value);
+                    }
                 }
             }
         }
+
         OkMultipartBody okMultipartBody = new OkMultipartBody(builder.build());
 
-        final Request okRequest = new Request.Builder()
-                .url(request.url())
-                .post(okMultipartBody).build();
+        Request okRequest = okRequestBuilder
+                .post(okMultipartBody)
+                .build();
         try {
             Response execute = okHttpClient.newCall(okRequest).execute();
             if (execute.isSuccessful()) {
@@ -342,25 +374,55 @@ public class OkhttpEngine extends BaseEngine {
     }
 
     @Override
-    public void uploadFile(final UploadRequest request, final FileCallback callback) {
+    public void uploadFile(final UploadRequest request, final ICallback callback) {
+        final Request.Builder okRequestBuilder = new Request.Builder().url(request.url());
+
+        if (request.headers() != null) {
+            for (Map.Entry<String, String> header : request.headers().entrySet()) {
+                if (header.getValue() == null) {
+                    continue;
+                }
+                okRequestBuilder.header(header.getKey(), header.getValue());
+            }
+        }
+
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
         if (request.params() != null) {
             for (Map.Entry<String, Object> param : request.params().entrySet()) {
-                Object object = param.getValue();
-                if (object instanceof File) {
-                    File file = (File) object;
-                    builder.addFormDataPart(request.getFileParamName(), file.getName(),
-                            RequestBody.create(MediaType.parse(guessMimeType(file.getAbsolutePath())), file));
-                } else {
+                Object value = param.getValue();
+
+                if(value instanceof String){
                     builder.addFormDataPart(param.getKey(), (String) param.getValue());
+                }else if(value instanceof File){
+                    File file = (File) value;
+                    builder.addFormDataPart(param.getKey(), file.getName(),
+                            RequestBody.create(MediaType.parse(guessMimeType(file.getAbsolutePath())), file));
+                }else if(value instanceof List){
+                    List list = (List) value;
+                    for (int i = 0; i < list.size() ; i++) {
+                        Object obj = list.get(i);
+                        if(obj instanceof File){
+                            File file = (File) obj;
+                            builder.addFormDataPart(param.getKey(), file.getName(),
+                                    RequestBody.create(MediaType.parse(guessMimeType(file.getAbsolutePath())), file));
+                        }else {
+                            throw new IllegalArgumentException();
+                        }
+                    }
+                }else {
+                    if(value == null){
+                        builder.addFormDataPart(param.getKey(), "");
+                    }else {
+                        builder.addFormDataPart(param.getKey(), (String) value);
+                    }
                 }
             }
         }
+
         OkMultipartBody okMultipartBody = new OkMultipartBody(builder.build());
 
-        final Request okRequest = new Request.Builder()
-                .url(request.url())
+        final Request okRequest = okRequestBuilder
                 .post(okMultipartBody).build();
         okHttpClient.newCall(okRequest).enqueue(new Callback() {
             @Override

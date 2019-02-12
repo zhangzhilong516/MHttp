@@ -11,6 +11,7 @@ import zcdog.com.mhttp.request.DownloadRequest;
 import zcdog.com.mhttp.request.GetRequest;
 import zcdog.com.mhttp.request.Method;
 import zcdog.com.mhttp.request.PostRequest;
+import zcdog.com.mhttp.request.UploadRequest;
 import zcdog.com.mhttp.utils.LogUtils;
 
 /**
@@ -86,5 +87,8 @@ public final class MHttpClient {
     }
     public static DownloadRequest.Builder download(){
         return new DownloadRequest.Builder(Method.DOWNLOAD);
+    }
+    public static UploadRequest.Builder upload(){
+        return new UploadRequest.Builder(Method.UPLOAD);
     }
 }

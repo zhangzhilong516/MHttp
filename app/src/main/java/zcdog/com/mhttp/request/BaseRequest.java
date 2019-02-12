@@ -1,11 +1,15 @@
 package zcdog.com.mhttp.request;
 
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
 import zcdog.com.mhttp.MHttpClient;
 import zcdog.com.mhttp.cache.CacheMode;
 import zcdog.com.mhttp.callback.ICallback;
@@ -83,6 +87,9 @@ public abstract class BaseRequest implements Request{
                 else sb.append("?");
                 for (Map.Entry<String, Object> urlParams : mParams.entrySet()) {
                     Object value = urlParams.getValue();
+                    if(value instanceof File || value instanceof List){
+                        continue;
+                    }
                     String urlValue = URLEncoder.encode((String) value, "UTF-8");
                     sb.append(urlParams.getKey()).append("=").append(urlValue).append("&");
                 }
@@ -90,6 +97,8 @@ public abstract class BaseRequest implements Request{
                 return sb.toString();
             }
         } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }catch (ClassCastException e){
             e.printStackTrace();
         }
         return cacheKey;
@@ -149,10 +158,16 @@ public abstract class BaseRequest implements Request{
 
         @Override
         public <T> T execute() throws ServerException{
+            if(url == null){
+                throw new NullPointerException("大哥，请设置URL");
+            }
             return build().execute();
         }
         @Override
         public void callBack(ICallback callback){
+            if(url == null){
+                throw new NullPointerException("大哥，请设置URL");
+            }
             build().callBack(callback);
         }
 

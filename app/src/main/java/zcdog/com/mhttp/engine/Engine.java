@@ -24,7 +24,7 @@ public interface Engine {
     void get(GetRequest request, ICallback callback);
     void post(PostRequest request, ICallback callback);
     void downloadFile(DownloadRequest request, FileCallback callback);
-    void uploadFile(UploadRequest request, FileCallback callback);
+    void uploadFile(UploadRequest request, ICallback callback);
 
     String get(GetRequest request) throws ServerException;
     String post(PostRequest request) throws ServerException;

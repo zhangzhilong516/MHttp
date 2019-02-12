@@ -9,7 +9,7 @@ import zcdog.com.mhttp.utils.LogUtils;
  * @date: 2019/1/30
  * @des:
  */
-public class ServerException extends Exception {
+public class ServerException extends Throwable {
     private static final String TAG = "ServerException";
     public static final int NO_NET_WORK = -2;
     private int errorCode = -1;
@@ -26,7 +26,6 @@ public class ServerException extends Exception {
     public ServerException(int errorCode,String errorMsg){
         super();
         this.errorCode = errorCode;
-        this.errorMsg = errorMsg;
     }
 
     public ServerException(String message,Throwable cause){

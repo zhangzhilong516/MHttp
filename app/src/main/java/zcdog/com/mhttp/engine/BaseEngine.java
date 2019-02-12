@@ -107,7 +107,7 @@ public abstract class BaseEngine implements Engine {
                 if(callBack == ICallback.NULL_CALLBACK){
                     return uploadFile((UploadRequest) request);
                 }else{
-                    uploadFile((UploadRequest) request, (FileCallback) callBack);
+                    uploadFile((UploadRequest) request, callBack);
                 }
                 break;
         }

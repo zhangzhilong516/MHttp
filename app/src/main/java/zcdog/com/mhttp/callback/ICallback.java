@@ -8,13 +8,13 @@ package zcdog.com.mhttp.callback;
 public interface ICallback {
     ICallback NULL_CALLBACK = new ICallback() {
         @Override
-        public void onSuccess(String result) {
+        public void onSuccess(String response) {
         }
 
         @Override
         public void onError(ServerException e) {
         }
     };
-    void onSuccess(String result);
+    void onSuccess(String response);
     void onError(ServerException e);
 }

@@ -13,6 +13,7 @@ import zcdog.com.mhttp.callback.HttpCallback;
 import zcdog.com.mhttp.callback.ICallback;
 import zcdog.com.mhttp.callback.ServerException;
 import zcdog.com.mhttp.engine.HttpEngine;
+import zcdog.com.mhttp.engine.OkhttpEngine;
 import zcdog.com.mhttp.utils.LogUtils;
 
 public class TestActivity extends AppCompatActivity {
@@ -24,7 +25,8 @@ public class TestActivity extends AppCompatActivity {
         setContentView(R.layout.activity_test);
 
         textView = findViewById(R.id.text_view);
-//        MHttpClient.getInstance().exchangeEngine(new HttpEngine());
+
+        MHttpClient.getInstance().exchangeEngine(new HttpEngine());
 //        MHttpClient.get()
 //                .url("https://www.baidu.com")
 //                .callBack(new ICallback() {
@@ -132,25 +134,42 @@ public class TestActivity extends AppCompatActivity {
 //                        });
 //            }
 //        }.start();
-        File file = new File(Environment.getExternalStorageDirectory() + File.separator + "DiskCache");
-        MHttpClient.download()
-                .desPath(file.getAbsolutePath())
-                .url("http://static.zcdog.com/zcdog/apk/mall/6.0/1/Mall6.0_zcdog_web.apk")
-                .callBack(new FileCallback() {
+//        File file = new File(Environment.getExternalStorageDirectory() + File.separator + "DiskCache");
+//        MHttpClient.download()
+//                .desPath(file.getAbsolutePath())
+//                .url("http://static.zcdog.com/zcdog/apk/mall/6.0/1/Mall6.0_zcdog_web.apk")
+//                .callBack(new FileCallback() {
+//                    @Override
+//                    public void onProgress(final long total, final long curr) {
+//                        runOnUiThread(new Runnable() {
+//                                    @Override
+//                                    public void run() {
+//                                        textView.setText(curr * 100 /total+ "");
+//                                    }
+//                                });
+//                        LogUtils.print("total======" + total + "curr ================" + curr );
+//                    }
+//
+//                    @Override
+//                    public void onSuccess(File file) {
+//                        LogUtils.print("======================下载成功！=================" + file.getAbsolutePath());
+//                    }
+//
+//                    @Override
+//                    public void onError(ServerException e) {
+//                        e.printStackTrace();
+//                    }
+//                });
+        File file = new File(Environment.getExternalStorageDirectory() + File.separator + "test.jpg");
+        MHttpClient.upload()
+                .url("https://apis.zcdog.com:50183/api/user/userMgr/user/uploadHeadIcon")
+                .addFile("headIcon",file)
+                .addHeader("Accept-Version", "com.zcdog.customer+json;1.0")
+                .addHeader("Token","67da40d0-3dfc-4099-9b3e-7061db7bc48d")
+                .callBack(new ICallback() {
                     @Override
-                    public void onProgress(final long total, final long curr) {
-                        runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        textView.setText(curr * 100 /total+ "");
-                                    }
-                                });
-                        LogUtils.print("total======" + total + "curr ================" + curr );
-                    }
-
-                    @Override
-                    public void onSuccess(File file) {
-                        LogUtils.print("======================下载成功！=================" + file.getAbsolutePath());
+                    public void onSuccess(String response) {
+                        LogUtils.print(response);
                     }
 
                     @Override
@@ -158,7 +177,5 @@ public class TestActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 });
-
-
     }
 }
