@@ -1,14 +1,10 @@
 package zcdog.com.mhttp.engine;
 
 
-import android.text.TextUtils;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.FileNameMap;
-import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +22,6 @@ import okhttp3.Response;
 import zcdog.com.mhttp.HttpConfig;
 import zcdog.com.mhttp.MHttpClient;
 import zcdog.com.mhttp.callback.FileCallback;
-import zcdog.com.mhttp.callback.HttpCallback;
 import zcdog.com.mhttp.callback.ServerException;
 import zcdog.com.mhttp.callback.ICallback;
 import zcdog.com.mhttp.request.ContentType;
@@ -442,5 +437,4 @@ public class OkhttpEngine extends BaseEngine {
             }
         });
     }
-
 }

@@ -9,10 +9,16 @@ import java.io.InputStream;
  */
 public interface Cache {
     void remove(String key);
+
     String get(String key);
-    <T> T getObj(String key,Class<T> clazz);
+
+    <T> T getObj(String key, Class<T> clazz);
+
     boolean hasCache(String key);
-    void put(String key,String value);
-    void put(String key,byte[] value);
-    void put(String key,InputStream is);
+
+    void put(String key, String value);
+
+    void put(String key, byte[] value);
+
+    void put(String key, InputStream is);
 }

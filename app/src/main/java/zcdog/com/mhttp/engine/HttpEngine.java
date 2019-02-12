@@ -1,9 +1,7 @@
 package zcdog.com.mhttp.engine;
 
 import java.io.BufferedWriter;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,10 +9,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -32,12 +27,10 @@ import zcdog.com.mhttp.utils.HttpUtils;
 /**
  * @author: zhangzhilong
  * @date: 2019/1/29
- * @des:
+ * @des: HttpUrlConnection
  */
 public class HttpEngine extends BaseEngine {
 
-    private static final String CRLF = "\r\n";
-    private static final String LINE_LINE = "--";
     public HttpEngine() {
         executorService = Executors.newCachedThreadPool();
     }
