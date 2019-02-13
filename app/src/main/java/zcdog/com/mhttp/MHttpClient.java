@@ -46,7 +46,7 @@ public final class MHttpClient {
     }
 
     public MHttpClient init(Context context){
-        this.context = context;
+        this.context = context.getApplicationContext();
         return this;
     }
     public void exchangeEngine(Engine engine){
